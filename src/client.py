@@ -97,3 +97,54 @@ class HevyClient:
         payload = response.json() or {}
         routines = payload.get("routines", [])
         return routines if isinstance(routines, list) else []
+
+    def get_all_exercise_templates(self, max_pages: int = 100) -> Dict[str, Dict[str, Any]]:
+        """
+        Busca todos os templates de exercícios e retorna um dicionário indexado por ID.
+        
+        Isso é muito mais eficiente do que buscar um template por vez, pois a API
+        retorna até 100 templates por página.
+        
+        Returns:
+            Dicionário com exercise_template_id como chave e o template como valor.
+        """
+        templates_by_id: Dict[str, Dict[str, Any]] = {}
+        page = 1
+        page_size = 100  # Máximo permitido pela API
+        
+        while page <= max_pages:
+            url = f"{self.base_url}/exercise_templates"
+            params = {"page": page, "pageSize": page_size}
+            response = requests.get(
+                url, headers=self.headers, params=params, timeout=self.timeout_seconds
+            )
+            response.raise_for_status()
+            payload = response.json() or {}
+            templates = payload.get("exercise_templates", [])
+            
+            if not templates:
+                break
+            
+            for template in templates:
+                template_id = template.get("id")
+                if template_id:
+                    templates_by_id[template_id] = template
+            
+            if len(templates) < page_size:
+                # Última página
+                break
+            page += 1
+        
+        return templates_by_id
+
+    def get_workouts_count(self) -> int:
+        """
+        Retorna o número total de treinos na conta.
+        """
+        url = f"{self.base_url}/workouts/count"
+        response = requests.get(
+            url, headers=self.headers, timeout=self.timeout_seconds
+        )
+        response.raise_for_status()
+        payload = response.json() or {}
+        return payload.get("workout_count", 0)
