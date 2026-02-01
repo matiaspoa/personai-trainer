@@ -7,3 +7,6 @@ urllib3
 # Dashboard
 streamlit>=1.32.0
 plotly>=5.18.0
+
+# LLM Router com fallback
+litellm>=1.40.0

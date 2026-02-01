@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from client import HevyClient
 from knowledge_base import ScienceKnowledgeBase
 from llm_service import LlmConfig, OpenAiLikeClient
+from model_router import LiteLLMClient, ModelRouter
 from processor import WorkoutProcessor
 from recommendation_engine import RecommendationEngine
 from user_profile import (
@@ -765,22 +766,29 @@ def render_ai_chat_tab(
     """Renderiza a aba de chat com IA."""
     st.header("🤖 Chat com Personal Trainer IA")
     
-    # Verifica configuração do LLM
+    # Inicializa o router de modelos com fallback
     try:
-        llm_cfg = LlmConfig.from_env()
-        llm_client = OpenAiLikeClient(llm_cfg)
-        llm_available = True
-    except ValueError:
+        router = ModelRouter()
+        llm_client = LiteLLMClient(router)
+        available_models = llm_client.available_models
+        llm_available = len(available_models) > 0
+    except Exception as e:
         llm_available = False
+        available_models = []
     
     if not llm_available:
         st.warning(
-            "LLM não configurado. Configure as variáveis de ambiente:\n"
-            "- LLM_PROVIDER (openai ou gemini)\n"
-            "- LLM_API_KEY\n"
-            "- LLM_MODEL"
+            "Nenhum LLM configurado. Configure pelo menos uma das chaves no `.env`:\n"
+            "- `GEMINI_API_KEY` (Google Gemini/Gemma)\n"
+            "- `GROQ_API_KEY` (Groq Llama)\n"
+            "- `OPENAI_API_KEY` (OpenAI GPT)"
         )
         return
+    
+    # Mostra modelos disponíveis
+    with st.expander("🔧 Modelos disponíveis", expanded=False):
+        for model in available_models:
+            st.text(f"✅ {model}")
     
     # Contexto para o chat
     profile_context = profile.get_context_for_llm()
@@ -876,6 +884,11 @@ Você tem acesso ao histórico COMPLETO de treinos do usuário no período selec
                         system_prompt=system_prompt
                     )
                     st.markdown(response)
+                    
+                    # Mostra qual modelo foi usado
+                    if llm_client.last_model_used:
+                        st.caption(f"_Modelo: {llm_client.last_model_used}_")
+                    
                     st.session_state.chat_messages.append({
                         "role": "assistant",
                         "content": response
@@ -904,11 +917,13 @@ def render_recommendations_tab(
     
     kb = ScienceKnowledgeBase()
     
-    # Tenta usar LLM, senão usa modo determinístico
+    # Tenta usar LiteLLM Router com fallback
     try:
-        llm_cfg = LlmConfig.from_env()
-        llm_client = OpenAiLikeClient(llm_cfg)
-    except ValueError:
+        router = ModelRouter()
+        llm_client = LiteLLMClient(router)
+        if not llm_client.available_models:
+            llm_client = None
+    except Exception:
         llm_client = None
     
     rec_engine = RecommendationEngine(knowledge_base=kb, llm_client=llm_client)
