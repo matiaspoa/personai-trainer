@@ -5,7 +5,10 @@ This document outlines essential information for agents working in this codebase
 ## 1. Project Overview
 
 This project is a Python application designed for personal fitness data analysis and AI-powered training recommendations. It interacts with the Hevy API to fetch workout data, processes it to calculate metrics like total workout volume and volume per muscle group, and generates science-based training recommendations using LLMs (OpenAI or Google Gemini).
-We'll have a dashboard where we can see the evolution and we set the period to fetch the API data.  
+
+**The application has two interfaces:**
+- **CLI Mode:** Command-line reports via `main.py`
+- **Dashboard Mode:** Web-based interactive dashboard via `dashboard.py` (Streamlit)
 
 ## 2. Project Type and Technologies
 
@@ -15,6 +18,8 @@ We'll have a dashboard where we can see the evolution and we set the period to f
     - `pandas` (for data processing and analysis)
     - `python-dotenv` (for environment variable management)
     - `resend` (for email delivery via Resend API)
+    - `streamlit` (for web dashboard UI)
+    - `plotly` (for interactive charts)
 *   **APIs:**
     - Hevy API (`https://api.hevyapp.com/v1`) — workout data
     - OpenAI/Gemini API — AI-powered recommendations
@@ -26,9 +31,11 @@ The codebase is organized as follows:
 
 *   `.`: Root directory containing `requirements.txt`, `LICENSE`, `README.md`, `AGENTS.md`, and the `src/` and `tests/` directories.
 *   `src/`: Contains the core Python application logic.
-    *   `src/main.py`: Entry point and orchestrator. Fetches workouts, processes data, generates recommendations, and sends email reports.
+    *   `src/main.py`: CLI entry point and orchestrator. Fetches workouts, processes data, generates recommendations, and sends email reports.
+    *   `src/dashboard.py`: **Streamlit dashboard** with interactive charts, period selector, and LLM chat interface.
     *   `src/client.py`: Defines the `HevyClient` class for all Hevy API interactions (fetching workouts, exercise templates, routines).
-    *   `src/processor.py`: Defines the `WorkoutProcessor` class for data manipulation with `pandas` DataFrames (total volume, volume by muscle group, volume evolution).
+    *   `src/processor.py`: Defines the `WorkoutProcessor` class for data manipulation with `pandas` DataFrames (total volume, volume by muscle group, volume evolution, top exercises, etc.).
+    *   `src/user_profile.py`: Defines `UserProfile`, `BodyMeasurements`, `TrainingGoal`, and `ExperienceLevel` for storing user data and generating LLM context.
     *   `src/recommendation_engine.py`: Defines `RecommendationEngine` class that generates AI-powered or deterministic training recommendations based on workout data and scientific sources.
     *   `src/llm_service.py`: Defines `LlmConfig` and `OpenAiLikeClient` for calling LLM providers (OpenAI, Google Gemini) to generate text.
     *   `src/knowledge_base.py`: Defines `ScienceKnowledgeBase` with curated scientific sources (ExRx, Stronger By Science) for each muscle group.
@@ -36,6 +43,9 @@ The codebase is organized as follows:
 *   `tests/`: Contains unit tests.
     *   `tests/test_client.py`: Unit tests for `HevyClient` with mocked API responses.
     *   `tests/test_processor.py`: Unit tests for `WorkoutProcessor` calculations.
+    *   `tests/test_user_profile.py`: Unit tests for `UserProfile` serialization and BMI calculation.
+*   `data/`: User data directory (auto-created).
+    *   `data/user_profile.json`: Saved user profile (not committed to git).
 
 ## 4. Essential Commands
 
@@ -75,7 +85,8 @@ To set up the project locally:
 
 ### 4.2. Running
 
-To run the main application:
+#### CLI Mode
+To run the command-line application:
 
 ```bash
 python src/main.py
@@ -90,6 +101,27 @@ Example:
 ```bash
 python src/main.py --page 1 --page-size 20 --top-n 10
 ```
+
+#### Dashboard Mode
+To run the Streamlit dashboard:
+
+```bash
+streamlit run src/dashboard.py
+```
+
+The dashboard will open in your browser at `http://localhost:8501`.
+
+**Dashboard Features:**
+- 📅 **Period Selector:** Filter workouts by date range
+- 👤 **User Profile:** Configure weight, height, body measurements, goals
+- 📊 **Overview:** Summary statistics (total workouts, volume, exercises)
+- 💪 **Muscle Groups:** Volume by muscle group (bar chart + pie chart)
+- 🏆 **Top Workouts:** Top 10 workouts ranked by volume
+- 🎯 **Top Exercises:** Top 10 exercises ranked by volume
+- 📈 **Workout Evolution:** Track volume/duration over time by workout type
+- 📊 **Exercise Evolution:** Track max weight/volume over time for exercises
+- 💡 **Recommendations:** AI-generated training recommendations
+- 🤖 **Chat IA:** Interactive chat with personal trainer AI (uses user profile as context)
 
 ### 4.3. Testing
 
