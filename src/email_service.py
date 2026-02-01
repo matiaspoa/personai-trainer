@@ -178,6 +178,7 @@ class ResendEmailSender:
         try:
             response = requests.post(self._base_url, json=payload, headers=headers, timeout=30)
             response.raise_for_status()
+
         except requests.HTTPError as exc:
             raise RuntimeError(f"Falha HTTP ao enviar e-mail via Resend: {exc}") from exc
         except requests.RequestException as exc:

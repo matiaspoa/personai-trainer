@@ -37,6 +37,46 @@ class ScienceKnowledgeBase:
                     url="https://www.strongerbyscience.com/hypertrophy/",
                 ),
             ],
+            "back": [
+                ScienceSource(
+                    name="ExRx — Back Exercises",
+                    url="https://exrx.net/Lists/ExList/BackWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Back Training",
+                    url="https://www.strongerbyscience.com/back-training/",
+                ),
+            ],
+            "shoulders": [
+                ScienceSource(
+                    name="ExRx — Shoulder Exercises",
+                    url="https://exrx.net/Lists/ExList/SsshoijWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Shoulder Training",
+                    url="https://www.strongerbyscience.com/overhead-press/",
+                ),
+            ],
+            "biceps": [
+                ScienceSource(
+                    name="ExRx — Biceps Exercises",
+                    url="https://exrx.net/Lists/ExList/ArmWt#Biceps",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Arm Training",
+                    url="https://www.strongerbyscience.com/arm-training/",
+                ),
+            ],
+            "triceps": [
+                ScienceSource(
+                    name="ExRx — Triceps Exercises",
+                    url="https://exrx.net/Lists/ExList/ArmWt#Triceps",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Arm Training",
+                    url="https://www.strongerbyscience.com/arm-training/",
+                ),
+            ],
             "legs": [
                 ScienceSource(
                     name="ExRx — Quadriceps Exercises",
@@ -45,6 +85,96 @@ class ScienceKnowledgeBase:
                 ScienceSource(
                     name="Stronger By Science — Squat Guide",
                     url="https://www.strongerbyscience.com/squat/",
+                ),
+            ],
+            "quadriceps": [
+                ScienceSource(
+                    name="ExRx — Quadriceps Exercises",
+                    url="https://exrx.net/Lists/ExList/ThighWt#Quadriceps",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Squat Guide",
+                    url="https://www.strongerbyscience.com/squat/",
+                ),
+            ],
+            "hamstrings": [
+                ScienceSource(
+                    name="ExRx — Hamstrings Exercises",
+                    url="https://exrx.net/Lists/ExList/ThighWt#Hamstrings",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Deadlift Guide",
+                    url="https://www.strongerbyscience.com/deadlift/",
+                ),
+            ],
+            "glutes": [
+                ScienceSource(
+                    name="ExRx — Glutes Exercises",
+                    url="https://exrx.net/Lists/ExList/HipsWt#Gluteus",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Hip Thrust Guide",
+                    url="https://www.strongerbyscience.com/hip-thrust/",
+                ),
+            ],
+            "calves": [
+                ScienceSource(
+                    name="ExRx — Calves Exercises",
+                    url="https://exrx.net/Lists/ExList/CalfWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Calf Training",
+                    url="https://www.strongerbyscience.com/calves/",
+                ),
+            ],
+            "abs": [
+                ScienceSource(
+                    name="ExRx — Abdominal Exercises",
+                    url="https://exrx.net/Lists/ExList/WassiWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Core Training",
+                    url="https://www.strongerbyscience.com/core-training/",
+                ),
+            ],
+            "core": [
+                ScienceSource(
+                    name="ExRx — Abdominal & Core Exercises",
+                    url="https://exrx.net/Lists/ExList/WaistWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Core Training",
+                    url="https://www.strongerbyscience.com/core-training/",
+                ),
+            ],
+            "forearms": [
+                ScienceSource(
+                    name="ExRx — Forearm Exercises",
+                    url="https://exrx.net/Lists/ExList/FsoreijWt",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Grip Training",
+                    url="https://www.strongerbyscience.com/grip-training/",
+                ),
+            ],
+            "traps": [
+                ScienceSource(
+                    name="ExRx — Trapezius Exercises",
+                    url="https://exrx.net/Lists/ExList/NeckWt#Trapezius",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Trap Training",
+                    url="https://www.strongerbyscience.com/shrugs/",
+                ),
+            ],
+            "lats": [
+                ScienceSource(
+                    name="ExRx — Latissimus Dorsi Exercises",
+                    url="https://exrx.net/Lists/ExList/BackWt#Latissimus",
+                ),
+                ScienceSource(
+                    name="Stronger By Science — Pull-up Guide",
+                    url="https://www.strongerbyscience.com/pull-ups/",
                 ),
             ],
         }

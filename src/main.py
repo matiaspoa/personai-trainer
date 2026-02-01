@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import argparse
+import json
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
@@ -169,6 +171,9 @@ def main() -> int:
     # Prioridade:
     # 1. Se RESEND_* estiver configurado, usa Resend.
     # 2. Caso contrário, tenta SMTP clássico (EMAIL_*).
+    # #region agent log
+    with open("/home/guilherme/dev/personai-trainer/personai-trainer/.cursor/debug.log", "a") as f: f.write(json.dumps({"sessionId": "debug-session", "runId": "run4", "hypothesisId": "A", "location": "main.py:172", "message": "Starting email section", "timestamp": int(time.time() * 1000)}) + "\n")
+    # #endregion
     email_body_lines: List[str] = []
     email_body_lines.append("Resumo de treinos recentes (Hevy):")
     email_body_lines.append(
@@ -192,6 +197,9 @@ def main() -> int:
 
     # Tenta Resend primeiro
     try:
+        # #region agent log
+        with open("/home/guilherme/dev/personai-trainer/personai-trainer/.cursor/debug.log", "a") as f: f.write(json.dumps({"sessionId": "debug-session", "runId": "run4", "hypothesisId": "A", "location": "main.py:194", "message": "Attempting Resend config load", "timestamp": int(time.time() * 1000)}) + "\n")
+        # #endregion
         resend_cfg = ResendEmailConfig.from_env()
         resend_sender = ResendEmailSender(resend_cfg)
         resend_sender.send_email(
@@ -201,6 +209,9 @@ def main() -> int:
         )
         print(f"Relatório enviado por e-mail via Resend para {resend_cfg.to_address}.")
     except ValueError:
+        # #region agent log
+        with open("/home/guilherme/dev/personai-trainer/personai-trainer/.cursor/debug.log", "a") as f: f.write(json.dumps({"sessionId": "debug-session", "runId": "run4", "hypothesisId": "A", "location": "main.py:204", "message": "Resend config failed, trying SMTP", "timestamp": int(time.time() * 1000)}) + "\n")
+        # #endregion
         # Configuração Resend ausente → tenta SMTP.
         try:
             email_cfg = EmailConfig.from_env()
