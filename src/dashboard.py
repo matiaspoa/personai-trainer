@@ -7,6 +7,7 @@ e chat com IA para recomendações personalizadas.
 """
 from __future__ import annotations
 
+import locale
 import os
 import sys
 from datetime import date, datetime, timedelta
@@ -35,6 +36,280 @@ from user_profile import (
 
 load_dotenv()
 
+# Tradução de exercícios (inglês -> português)
+EXERCISE_PT = {
+    # Peito
+    "bench press": "Supino Reto",
+    "incline bench press": "Supino Inclinado",
+    "decline bench press": "Supino Declinado",
+    "dumbbell bench press": "Supino com Halteres",
+    "incline dumbbell press": "Supino Inclinado com Halteres",
+    "chest press": "Chest Press",
+    "chest fly": "Crucifixo",
+    "cable fly": "Crucifixo no Cabo",
+    "pec deck": "Pec Deck",
+    "push up": "Flexão de Braço",
+    "push-up": "Flexão de Braço",
+    "dip": "Paralelas",
+    "dips": "Paralelas",
+    
+    # Costas
+    "lat pulldown": "Puxada Alta",
+    "pull up": "Barra Fixa",
+    "pull-up": "Barra Fixa",
+    "chin up": "Barra Fixa Supinada",
+    "chin-up": "Barra Fixa Supinada",
+    "bent over row": "Remada Curvada",
+    "barbell row": "Remada com Barra",
+    "dumbbell row": "Remada Unilateral",
+    "seated row": "Remada Sentada",
+    "cable row": "Remada no Cabo",
+    "t-bar row": "Remada Cavalinho",
+    "deadlift": "Levantamento Terra",
+    "romanian deadlift": "Stiff",
+    "back extension": "Hiperextensão",
+    
+    # Ombros
+    "shoulder press": "Desenvolvimento",
+    "overhead press": "Desenvolvimento",
+    "military press": "Desenvolvimento Militar",
+    "dumbbell shoulder press": "Desenvolvimento com Halteres",
+    "arnold press": "Arnold Press",
+    "lateral raise": "Elevação Lateral",
+    "front raise": "Elevação Frontal",
+    "rear delt fly": "Crucifixo Invertido",
+    "face pull": "Face Pull",
+    "upright row": "Remada Alta",
+    "shrug": "Encolhimento",
+    "shrugs": "Encolhimento",
+    
+    # Bíceps
+    "bicep curl": "Rosca Direta",
+    "barbell curl": "Rosca com Barra",
+    "dumbbell curl": "Rosca com Halteres",
+    "hammer curl": "Rosca Martelo",
+    "preacher curl": "Rosca Scott",
+    "concentration curl": "Rosca Concentrada",
+    "cable curl": "Rosca no Cabo",
+    "incline curl": "Rosca Inclinada",
+    
+    # Tríceps
+    "tricep pushdown": "Tríceps no Pulley",
+    "tricep extension": "Extensão de Tríceps",
+    "skull crusher": "Tríceps Testa",
+    "overhead tricep extension": "Tríceps Francês",
+    "close grip bench press": "Supino Pegada Fechada",
+    "tricep dip": "Paralelas para Tríceps",
+    "tricep kickback": "Tríceps Coice",
+    
+    # Pernas
+    "squat": "Agachamento",
+    "back squat": "Agachamento Livre",
+    "front squat": "Agachamento Frontal",
+    "leg press": "Leg Press",
+    "leg extension": "Cadeira Extensora",
+    "leg curl": "Mesa Flexora",
+    "seated leg curl": "Cadeira Flexora",
+    "lying leg curl": "Mesa Flexora",
+    "lunges": "Avanço",
+    "lunge": "Avanço",
+    "walking lunge": "Avanço Caminhando",
+    "bulgarian split squat": "Agachamento Búlgaro",
+    "hack squat": "Hack Squat",
+    "goblet squat": "Agachamento Goblet",
+    "hip thrust": "Elevação de Quadril",
+    "glute bridge": "Ponte de Glúteos",
+    "hip abduction": "Abdução de Quadril",
+    "hip adduction": "Adução de Quadril",
+    "calf raise": "Elevação de Panturrilha",
+    "seated calf raise": "Panturrilha Sentado",
+    "standing calf raise": "Panturrilha em Pé",
+    
+    # Abdômen
+    "crunch": "Abdominal",
+    "sit up": "Abdominal",
+    "sit-up": "Abdominal",
+    "leg raise": "Elevação de Pernas",
+    "hanging leg raise": "Elevação de Pernas na Barra",
+    "plank": "Prancha",
+    "russian twist": "Rotação Russa",
+    "cable crunch": "Abdominal no Cabo",
+    "ab wheel": "Roda Abdominal",
+    "mountain climber": "Escalador",
+    
+    # Antebraços
+    "wrist curl": "Rosca de Punho",
+    "reverse wrist curl": "Rosca de Punho Invertida",
+    "farmer walk": "Caminhada do Fazendeiro",
+    "farmer's walk": "Caminhada do Fazendeiro",
+    
+    # Cardio
+    "treadmill": "Esteira",
+    "elliptical": "Elíptico",
+    "cycling": "Bicicleta",
+    "rowing": "Remo",
+    "jump rope": "Pular Corda",
+    "jumping jacks": "Polichinelo",
+    "burpee": "Burpee",
+    "burpees": "Burpees",
+}
+
+# Termos comuns para tradução parcial
+EXERCISE_TERMS_PT = {
+    "barbell": "Barra",
+    "dumbbell": "Halter",
+    "cable": "Cabo",
+    "machine": "Máquina",
+    "seated": "Sentado",
+    "standing": "Em Pé",
+    "lying": "Deitado",
+    "incline": "Inclinado",
+    "decline": "Declinado",
+    "reverse": "Invertido",
+    "single arm": "Unilateral",
+    "single leg": "Unilateral",
+    "close grip": "Pegada Fechada",
+    "wide grip": "Pegada Aberta",
+    "neutral grip": "Pegada Neutra",
+    "overhand": "Pronada",
+    "underhand": "Supinada",
+}
+
+
+def translate_exercise(exercise_name: str) -> str:
+    """Traduz o nome do exercício para português."""
+    if not exercise_name:
+        return "Desconhecido"
+    
+    # Tenta tradução exata (case insensitive)
+    name_lower = exercise_name.lower()
+    
+    # Remove termos de equipamento para busca
+    for eng, pt in [("(barbell)", ""), ("(dumbbell)", ""), ("(cable)", ""), ("(machine)", ""), ("(barra)", "")]:
+        name_lower = name_lower.replace(eng, "").strip()
+    
+    if name_lower in EXERCISE_PT:
+        return EXERCISE_PT[name_lower]
+    
+    # Tenta buscar parcialmente
+    for eng, pt in EXERCISE_PT.items():
+        if eng in name_lower or name_lower in eng:
+            return pt
+    
+    # Retorna o original se não encontrar tradução
+    return exercise_name
+
+
+# Tradução de grupos musculares (inglês -> português)
+MUSCLE_GROUP_PT = {
+    "chest": "Peito",
+    "back": "Costas",
+    "shoulders": "Ombros",
+    "biceps": "Bíceps",
+    "triceps": "Tríceps",
+    "forearms": "Antebraços",
+    "quadriceps": "Quadríceps",
+    "hamstrings": "Posteriores",
+    "glutes": "Glúteos",
+    "calves": "Panturrilhas",
+    "abs": "Abdômen",
+    "abdominals": "Abdômen",
+    "core": "Core",
+    "traps": "Trapézio",
+    "trapezius": "Trapézio",
+    "lats": "Dorsais",
+    "latissimus_dorsi": "Dorsais",
+    "lower_back": "Lombar",
+    "neck": "Pescoço",
+    "full_body": "Corpo Inteiro",
+    "cardio": "Cardio",
+    "other": "Outros",
+    # Variações comuns
+    "legs": "Pernas",
+    "arms": "Braços",
+    "upper_back": "Costas Superior",
+    "middle_back": "Costas Média",
+    "obliques": "Oblíquos",
+    "hip_flexors": "Flexores do Quadril",
+    "adductors": "Adutores",
+    "abductors": "Abdutores",
+    # Mais variações da API Hevy
+    "rear_delts": "Deltoides Posterior",
+    "front_delts": "Deltoides Anterior",
+    "side_delts": "Deltoides Lateral",
+    "lateral_deltoid": "Deltoides Lateral",
+    "anterior_deltoid": "Deltoides Anterior",
+    "posterior_deltoid": "Deltoides Posterior",
+    "rhomboids": "Romboides",
+    "serratus": "Serrátil",
+    "serratus_anterior": "Serrátil Anterior",
+    "rotator_cuff": "Manguito Rotador",
+    "erector_spinae": "Eretores da Espinha",
+    "pectorals": "Peitorais",
+    "pecs": "Peitorais",
+    "delts": "Deltoides",
+    "deltoids": "Deltoides",
+    "quads": "Quadríceps",
+    "hams": "Posteriores",
+    "tibialis": "Tibial",
+    "tibialis_anterior": "Tibial Anterior",
+    "soleus": "Sóleo",
+    "gastrocnemius": "Gastrocnêmio",
+    "wrist_flexors": "Flexores do Punho",
+    "wrist_extensors": "Extensores do Punho",
+    "grip": "Pegada",
+}
+
+# Tradução de níveis de experiência
+EXPERIENCE_LEVEL_PT = {
+    "beginner": "Iniciante",
+    "intermediate": "Intermediário",
+    "advanced": "Avançado",
+    "elite": "Elite",
+}
+
+# Tradução de objetivos
+TRAINING_GOAL_PT = {
+    "hypertrophy": "Hipertrofia",
+    "strength": "Força",
+    "endurance": "Resistência",
+    "fat_loss": "Perda de Gordura",
+    "maintenance": "Manutenção",
+    "general_fitness": "Condicionamento Geral",
+}
+
+# Tradução de gênero
+GENDER_PT = {
+    "male": "Masculino",
+    "female": "Feminino",
+    "other": "Outro",
+}
+
+
+def translate_muscle_group(muscle_group: str) -> str:
+    """Traduz o nome do grupo muscular para português."""
+    if not muscle_group:
+        return "Desconhecido"
+    key = muscle_group.lower().replace(" ", "_")
+    return MUSCLE_GROUP_PT.get(key, muscle_group.title())
+
+
+def format_date_br(date_value) -> str:
+    """Formata data para o padrão brasileiro DD/MM/YYYY."""
+    if date_value is None:
+        return ""
+    if isinstance(date_value, str):
+        try:
+            date_value = pd.to_datetime(date_value)
+        except:
+            return date_value
+    try:
+        return date_value.strftime("%d/%m/%Y")
+    except:
+        return str(date_value)
+
+load_dotenv()
+
 # Configuração da página
 st.set_page_config(
     page_title="PersonAI Trainer",
@@ -60,7 +335,7 @@ def get_hevy_client() -> Optional[HevyClient]:
 
 
 @st.cache_data(ttl=300)  # Cache por 5 minutos
-def fetch_workouts(page_size: int = 50, max_pages: int = 10) -> List[Dict[str, Any]]:
+def fetch_workouts(page_size: int = 10, max_pages: int = 50) -> List[Dict[str, Any]]:
     """Busca treinos do Hevy com cache."""
     client = get_hevy_client()
     if not client:
@@ -128,9 +403,9 @@ def render_sidebar() -> Tuple[date, date, UserProfile]:
     
     col1, col2 = st.sidebar.columns(2)
     with col1:
-        start_date = st.date_input("Início", value=default_start, max_value=today)
+        start_date = st.date_input("Início", value=default_start, max_value=today, format="DD/MM/YYYY")
     with col2:
-        end_date = st.date_input("Fim", value=today, max_value=today)
+        end_date = st.date_input("Fim", value=today, max_value=today, format="DD/MM/YYYY")
     
     if start_date > end_date:
         st.sidebar.error("Data inicial deve ser anterior à data final.")
@@ -162,11 +437,14 @@ def render_sidebar() -> Tuple[date, date, UserProfile]:
             max_value=100, 
             value=profile.age or 30
         )
-        profile.gender = st.selectbox(
-            "Gênero",
-            options=["male", "female", "other"],
-            index=["male", "female", "other"].index(profile.gender) if profile.gender else 0
-        )
+        
+        # Gênero com labels em português
+        gender_options = ["male", "female", "other"]
+        gender_labels = [GENDER_PT[g] for g in gender_options]
+        gender_index = gender_options.index(profile.gender) if profile.gender else 0
+        selected_gender_label = st.selectbox("Gênero", options=gender_labels, index=gender_index)
+        profile.gender = gender_options[gender_labels.index(selected_gender_label)]
+        
         profile.body_fat_percentage = st.number_input(
             "Gordura corporal (%)",
             min_value=3.0,
@@ -174,21 +452,20 @@ def render_sidebar() -> Tuple[date, date, UserProfile]:
             value=profile.body_fat_percentage or 15.0,
             step=0.5
         )
-        profile.experience_level = ExperienceLevel(
-            st.selectbox(
-                "Nível de experiência",
-                options=[e.value for e in ExperienceLevel],
-                index=[e.value for e in ExperienceLevel].index(profile.experience_level.value)
-            )
-        )
         
+        # Nível de experiência com labels em português
+        exp_options = [e.value for e in ExperienceLevel]
+        exp_labels = [EXPERIENCE_LEVEL_PT[e] for e in exp_options]
+        exp_index = exp_options.index(profile.experience_level.value)
+        selected_exp_label = st.selectbox("Nível de experiência", options=exp_labels, index=exp_index)
+        profile.experience_level = ExperienceLevel(exp_options[exp_labels.index(selected_exp_label)])
+        
+        # Objetivos com labels em português
         goals_options = [g.value for g in TrainingGoal]
-        selected_goals = st.multiselect(
-            "Objetivos",
-            options=goals_options,
-            default=[g.value for g in profile.training_goals]
-        )
-        profile.training_goals = [TrainingGoal(g) for g in selected_goals]
+        goals_labels = [TRAINING_GOAL_PT[g] for g in goals_options]
+        current_goals_labels = [TRAINING_GOAL_PT[g.value] for g in profile.training_goals]
+        selected_goals_labels = st.multiselect("Objetivos", options=goals_labels, default=current_goals_labels)
+        profile.training_goals = [TrainingGoal(goals_options[goals_labels.index(label)]) for label in selected_goals_labels]
         
         injuries_text = st.text_area(
             "Lesões/Limitações (uma por linha)",
@@ -252,6 +529,8 @@ def render_muscle_groups_tab(processor: WorkoutProcessor) -> None:
         st.warning("Sem dados de volume por grupamento muscular.")
         return
     
+    # Traduz os nomes dos grupos musculares
+    df["grupo_muscular"] = df["muscle_group"].apply(translate_muscle_group)
     df = df.sort_values("volume_total", ascending=False)
     
     col1, col2 = st.columns(2)
@@ -260,12 +539,12 @@ def render_muscle_groups_tab(processor: WorkoutProcessor) -> None:
         # Gráfico de barras
         fig_bar = px.bar(
             df,
-            x="muscle_group",
+            x="grupo_muscular",
             y="volume_total",
             color="volume_total",
             color_continuous_scale="Blues",
             title="Volume Total por Grupo Muscular",
-            labels={"muscle_group": "Grupo Muscular", "volume_total": "Volume (kg)"}
+            labels={"grupo_muscular": "Grupo Muscular", "volume_total": "Volume (kg)"}
         )
         fig_bar.update_layout(showlegend=False)
         st.plotly_chart(fig_bar, use_container_width=True)
@@ -275,7 +554,7 @@ def render_muscle_groups_tab(processor: WorkoutProcessor) -> None:
         fig_pie = px.pie(
             df,
             values="volume_total",
-            names="muscle_group",
+            names="grupo_muscular",
             title="Distribuição de Volume",
             hole=0.4
         )
@@ -283,8 +562,9 @@ def render_muscle_groups_tab(processor: WorkoutProcessor) -> None:
     
     # Tabela detalhada
     st.subheader("📋 Detalhes")
-    df_display = df.copy()
+    df_display = df[["grupo_muscular", "volume_total", "sets_count"]].copy()
     df_display["volume_total"] = df_display["volume_total"].apply(lambda x: f"{x:,.0f} kg")
+    df_display.columns = ["Grupo Muscular", "Volume Total", "Séries"]
     st.dataframe(df_display, use_container_width=True, hide_index=True)
 
 
@@ -332,6 +612,10 @@ def render_top_exercises_tab(processor: WorkoutProcessor, top_n: int = 10) -> No
         st.warning("Sem dados de exercícios.")
         return
     
+    # Traduz grupos musculares e nomes de exercícios
+    df["grupo_muscular"] = df["muscle_group"].apply(translate_muscle_group)
+    df["exercicio"] = df["exercise_name"].apply(translate_exercise)
+    
     col1, col2 = st.columns([2, 1])
     
     with col1:
@@ -339,14 +623,14 @@ def render_top_exercises_tab(processor: WorkoutProcessor, top_n: int = 10) -> No
         fig = px.bar(
             df,
             x="volume_total",
-            y="exercise_name",
+            y="exercicio",
             orientation="h",
-            color="muscle_group",
+            color="grupo_muscular",
             title=f"Top {top_n} Exercícios por Volume",
             labels={
-                "exercise_name": "Exercício",
+                "exercicio": "Exercício",
                 "volume_total": "Volume (kg)",
-                "muscle_group": "Grupo Muscular"
+                "grupo_muscular": "Grupo Muscular"
             }
         )
         fig.update_layout(yaxis=dict(categoryorder="total ascending"))
@@ -354,7 +638,7 @@ def render_top_exercises_tab(processor: WorkoutProcessor, top_n: int = 10) -> No
     
     with col2:
         # Tabela resumida
-        df_display = df[["exercise_name", "muscle_group", "volume_total", "times_performed"]].copy()
+        df_display = df[["exercicio", "grupo_muscular", "volume_total", "times_performed"]].copy()
         df_display["volume_total"] = df_display["volume_total"].apply(lambda x: f"{x:,.0f}")
         df_display.columns = ["Exercício", "Grupo", "Volume (kg)", "Frequência"]
         st.dataframe(df_display, use_container_width=True, hide_index=True)
@@ -384,6 +668,7 @@ def render_workout_evolution_tab(processor: WorkoutProcessor) -> None:
             "workout_title": "Treino"
         }
     )
+    fig_volume.update_xaxes(tickformat="%d/%m/%Y")
     st.plotly_chart(fig_volume, use_container_width=True)
     
     # Se tiver duração, mostra também
@@ -401,6 +686,7 @@ def render_workout_evolution_tab(processor: WorkoutProcessor) -> None:
                 "workout_title": "Treino"
             }
         )
+        fig_duration.update_xaxes(tickformat="%d/%m/%Y")
         st.plotly_chart(fig_duration, use_container_width=True)
 
 
@@ -414,34 +700,42 @@ def render_exercise_evolution_tab(processor: WorkoutProcessor) -> None:
         st.warning("Sem dados de evolução de exercícios.")
         return
     
-    # Seletor de exercício
-    exercises = df["exercise_name"].unique().tolist()
-    selected_exercises = st.multiselect(
+    # Traduz nomes dos exercícios
+    df["exercicio"] = df["exercise_name"].apply(translate_exercise)
+    
+    # Seletor de exercício (mostra traduzido)
+    exercise_mapping = dict(zip(df["exercicio"], df["exercise_name"]))
+    exercises_pt = df["exercicio"].unique().tolist()
+    
+    selected_exercises_pt = st.multiselect(
         "Selecione os exercícios para visualizar",
-        options=exercises,
-        default=exercises[:3] if len(exercises) >= 3 else exercises
+        options=exercises_pt,
+        default=exercises_pt[:3] if len(exercises_pt) >= 3 else exercises_pt
     )
     
-    if not selected_exercises:
+    if not selected_exercises_pt:
         st.info("Selecione pelo menos um exercício.")
         return
     
-    df_filtered = df[df["exercise_name"].isin(selected_exercises)]
+    # Filtra pelo nome original
+    selected_originals = [exercise_mapping[ex] for ex in selected_exercises_pt]
+    df_filtered = df[df["exercise_name"].isin(selected_originals)]
     
     # Gráfico de peso máximo
     fig_weight = px.line(
         df_filtered,
         x="date",
         y="max_weight",
-        color="exercise_name",
+        color="exercicio",
         markers=True,
         title="Evolução do Peso Máximo",
         labels={
             "date": "Data",
             "max_weight": "Peso Máximo (kg)",
-            "exercise_name": "Exercício"
+            "exercicio": "Exercício"
         }
     )
+    fig_weight.update_xaxes(tickformat="%d/%m/%Y")
     st.plotly_chart(fig_weight, use_container_width=True)
     
     # Gráfico de volume
@@ -449,22 +743,24 @@ def render_exercise_evolution_tab(processor: WorkoutProcessor) -> None:
         df_filtered,
         x="date",
         y="volume_total",
-        color="exercise_name",
+        color="exercicio",
         markers=True,
         title="Evolução do Volume por Sessão",
         labels={
             "date": "Data",
             "volume_total": "Volume (kg)",
-            "exercise_name": "Exercício"
+            "exercicio": "Exercício"
         }
     )
+    fig_volume.update_xaxes(tickformat="%d/%m/%Y")
     st.plotly_chart(fig_volume, use_container_width=True)
 
 
 def render_ai_chat_tab(
     profile: UserProfile,
     processor: WorkoutProcessor,
-    df_volume_by_muscle: pd.DataFrame
+    df_volume_by_muscle: pd.DataFrame,
+    workouts: list
 ) -> None:
     """Renderiza a aba de chat com IA."""
     st.header("🤖 Chat com Personal Trainer IA")
@@ -504,7 +800,44 @@ Volume médio por treino: {stats['avg_volume_per_workout']:,.0f} kg
         top_muscles = df_volume_by_muscle.nlargest(5, "volume_total")
         workout_context += "\nTop grupamentos musculares por volume:\n"
         for _, row in top_muscles.iterrows():
-            workout_context += f"- {row['muscle_group']}: {row['volume_total']:,.0f} kg\n"
+            muscle_pt = translate_muscle_group(row['muscle_group'])
+            workout_context += f"- {muscle_pt}: {row['volume_total']:,.0f} kg\n"
+    
+    # Lista detalhada de todos os treinos
+    if workouts:
+        # Ordena por data
+        sorted_workouts = sorted(workouts, key=lambda w: w.get("start_time", ""))
+        
+        workout_context += "\n=== LISTA DE TODOS OS TREINOS ===\n"
+        
+        # Primeiro treino
+        first = sorted_workouts[0]
+        first_date = first.get("start_time", "")[:10] if first.get("start_time") else "N/A"
+        workout_context += f"\n📅 PRIMEIRO TREINO: {first.get('title', 'Sem nome')} em {format_date_br(first_date)}\n"
+        
+        # Último treino
+        last = sorted_workouts[-1]
+        last_date = last.get("start_time", "")[:10] if last.get("start_time") else "N/A"
+        workout_context += f"📅 ÚLTIMO TREINO: {last.get('title', 'Sem nome')} em {format_date_br(last_date)}\n"
+        
+        # Limita a 20 treinos mais recentes para não estourar contexto
+        recent_workouts = sorted_workouts[-20:] if len(sorted_workouts) > 20 else sorted_workouts
+        workout_context += f"\n--- Últimos {len(recent_workouts)} treinos (de {len(sorted_workouts)} total) ---\n"
+        for w in recent_workouts:
+            w_date = w.get("start_time", "")[:10] if w.get("start_time") else "N/A"
+            w_title = w.get("title", "Sem nome")
+            
+            # Calcula volume do treino
+            volume = 0
+            exercises_count = 0
+            for ex in w.get("exercises", []):
+                exercises_count += 1
+                for s in ex.get("sets", []):
+                    weight = s.get("weight_kg") or 0
+                    reps = s.get("reps") or 0
+                    volume += weight * reps
+            
+            workout_context += f"- {format_date_br(w_date)}: {w_title} | {volume:,.0f}kg | {exercises_count} exercícios\n"
     
     # Histórico de chat
     if "chat_messages" not in st.session_state:
@@ -532,15 +865,15 @@ Use os dados do usuário e seus treinos para dar recomendações personalizadas 
 
 Responda de forma clara, objetiva e sempre justifique suas recomendações com base científica quando possível.
 Se não tiver certeza de algo, seja honesto sobre isso.
+Você tem acesso ao histórico COMPLETO de treinos do usuário no período selecionado, incluindo datas, nomes dos treinos, volumes e exercícios realizados.
 """
         
         with st.chat_message("assistant"):
             with st.spinner("Pensando..."):
                 try:
-                    response = llm_client.generate(
-                        system_prompt=system_prompt,
-                        user_prompt=prompt,
-                        max_tokens=1024
+                    response = llm_client.generate_text(
+                        prompt=prompt,
+                        system_prompt=system_prompt
                     )
                     st.markdown(response)
                     st.session_state.chat_messages.append({
@@ -600,7 +933,8 @@ def render_recommendations_tab(
         return
     
     for rec in recommendations:
-        with st.expander(f"💪 {rec.muscle_group}", expanded=True):
+        muscle_pt = translate_muscle_group(rec.muscle_group)
+        with st.expander(f"💪 {muscle_pt}", expanded=True):
             st.markdown(rec.summary)
             
             if rec.sources:
@@ -640,7 +974,7 @@ def main():
         tabs = st.tabs(["🤖 Chat IA"])
         with tabs[0]:
             processor = WorkoutProcessor([], exercise_templates=templates)
-            render_ai_chat_tab(profile, processor, pd.DataFrame())
+            render_ai_chat_tab(profile, processor, pd.DataFrame(), [])
         return
     
     # Cria processador
@@ -649,8 +983,8 @@ def main():
     # Calcula volume por músculo (usado em várias abas)
     df_volume_by_muscle = processor.calculate_volume_by_muscle_group()
     
-    # Abas
-    tabs = st.tabs([
+    # Lista de abas
+    tab_names = [
         "📊 Visão Geral",
         "💪 Grupamentos",
         "🏆 Top Treinos",
@@ -659,31 +993,43 @@ def main():
         "📊 Evolução Exercícios",
         "💡 Recomendações",
         "🤖 Chat IA"
-    ])
+    ]
     
-    with tabs[0]:
+    # Usa session_state para manter a aba do Chat IA ativa após enviar mensagem
+    if "active_tab" not in st.session_state:
+        st.session_state.active_tab = 0
+    
+    # Seleciona a aba via radio na sidebar para persistir
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🗂️ Navegação")
+    selected_tab = st.sidebar.radio(
+        "Selecione a aba:",
+        options=range(len(tab_names)),
+        format_func=lambda x: tab_names[x],
+        index=st.session_state.active_tab,
+        key="tab_selector"
+    )
+    st.session_state.active_tab = selected_tab
+    
+    # Renderiza apenas a aba selecionada
+    st.markdown(f"## {tab_names[selected_tab]}")
+    
+    if selected_tab == 0:
         render_overview_tab(processor, workouts)
-    
-    with tabs[1]:
+    elif selected_tab == 1:
         render_muscle_groups_tab(processor)
-    
-    with tabs[2]:
+    elif selected_tab == 2:
         render_top_workouts_tab(processor)
-    
-    with tabs[3]:
+    elif selected_tab == 3:
         render_top_exercises_tab(processor)
-    
-    with tabs[4]:
+    elif selected_tab == 4:
         render_workout_evolution_tab(processor)
-    
-    with tabs[5]:
+    elif selected_tab == 5:
         render_exercise_evolution_tab(processor)
-    
-    with tabs[6]:
+    elif selected_tab == 6:
         render_recommendations_tab(processor, df_volume_by_muscle)
-    
-    with tabs[7]:
-        render_ai_chat_tab(profile, processor, df_volume_by_muscle)
+    elif selected_tab == 7:
+        render_ai_chat_tab(profile, processor, df_volume_by_muscle, workouts)
 
 
 if __name__ == "__main__":

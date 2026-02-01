@@ -1,5 +1,5 @@
 requests
-pandas==3.0.0
+pandas>=2.0.0,<3.0.0
 python-dotenv==1.0.1
 resend==2.21.0
 urllib3

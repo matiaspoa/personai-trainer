@@ -50,6 +50,8 @@ class TestWorkoutProcessor(unittest.TestCase):
         ]
         
         self.mock_hevy_client = Mock(spec=HevyClient)
+        # Configura o mock para retornar um dict vazio no batch loading
+        self.mock_hevy_client.get_all_exercise_templates.return_value = {}
         self.processor = WorkoutProcessor(self.sample_workouts, hevy_client=self.mock_hevy_client)
 
     def test_calculate_total_volume(self):

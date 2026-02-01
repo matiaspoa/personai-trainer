@@ -1,0 +1,15 @@
+{
+  "name": "Gui",
+  "weight_kg": 85.0,
+  "height_cm": 175.0,
+  "age": 28,
+  "gender": "male",
+  "body_fat_percentage": 20.0,
+  "experience_level": "intermediate",
+  "training_goals": [
+    "hypertrophy"
+  ],
+  "injuries": [],
+  "measurements": {},
+  "notes": ""
+}

@@ -129,6 +129,8 @@ class OpenAiLikeClient:
         Endpoint:
         POST {base_url}/models/{model}:generateContent
         Header: x-goog-api-key
+        
+        Nota: Modelos Gemma não suportam systemInstruction, então incluímos no prompt.
         """
         url = f"{self._config.base_url}/models/{self._config.model}:generateContent"
         headers = {
@@ -136,12 +138,23 @@ class OpenAiLikeClient:
             "Content-Type": "application/json",
         }
 
-        payload: dict = {
-            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
-            "generationConfig": {"temperature": 0.4},
-        }
-        if system_prompt:
-            payload["systemInstruction"] = {"parts": [{"text": system_prompt}]}
+        # Gemma não suporta systemInstruction - incluir no prompt
+        is_gemma = "gemma" in self._config.model.lower()
+        
+        if is_gemma and system_prompt:
+            # Combina system prompt com user prompt para Gemma
+            combined_prompt = f"{system_prompt}\n\n---\n\nUsuário: {prompt}"
+            payload: dict = {
+                "contents": [{"role": "user", "parts": [{"text": combined_prompt}]}],
+                "generationConfig": {"temperature": 0.4},
+            }
+        else:
+            payload = {
+                "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+                "generationConfig": {"temperature": 0.4},
+            }
+            if system_prompt:
+                payload["systemInstruction"] = {"parts": [{"text": system_prompt}]}
 
         try:
             response = requests.post(url, headers=headers, json=payload, timeout=60)

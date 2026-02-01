@@ -103,14 +103,14 @@ class HevyClient:
         Busca todos os templates de exercícios e retorna um dicionário indexado por ID.
         
         Isso é muito mais eficiente do que buscar um template por vez, pois a API
-        retorna até 100 templates por página.
+        retorna até 10 templates por página.
         
         Returns:
             Dicionário com exercise_template_id como chave e o template como valor.
         """
         templates_by_id: Dict[str, Dict[str, Any]] = {}
         page = 1
-        page_size = 100  # Máximo permitido pela API
+        page_size = 10  # Limite da API Hevy
         
         while page <= max_pages:
             url = f"{self.base_url}/exercise_templates"
