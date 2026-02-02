@@ -34,6 +34,7 @@ from user_profile import (
     TrainingGoal,
     UserProfile,
 )
+from workout_parser import WorkoutParser, RoutineConfig, format_routine_preview
 
 load_dotenv()
 
@@ -757,6 +758,109 @@ def render_exercise_evolution_tab(processor: WorkoutProcessor) -> None:
     st.plotly_chart(fig_volume, use_container_width=True)
 
 
+def detect_workout_suggestion(text: str) -> bool:
+    """
+    Detecta se o texto contém uma sugestão de treino estruturada.
+    
+    Procura por padrões como:
+    - "Exercício: 3x10"
+    - "Supino Reto - 4x8-12"
+    - Listas de exercícios com séries/reps
+    """
+    import re
+    
+    # Padrões que indicam sugestão de treino
+    patterns = [
+        r"\d+\s*(?:x|×|X)\s*\d+",  # 3x10, 4x8
+        r"séries?\s*(?:de|:)?\s*\d+",  # série de 3, séries: 4
+        r"repeti[çc][õo]es?\s*(?:de|:)?\s*\d+",  # repetições de 10
+        r"(?:supino|agachamento|leg press|remada|pulldown|desenvolvimento|rosca|tríceps|extensão|flexão)",  # nomes de exercícios
+    ]
+    
+    matches = 0
+    for pattern in patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            matches += 1
+    
+    # Precisa ter pelo menos 2 padrões para considerar uma sugestão
+    return matches >= 2
+
+
+def render_save_routine_ui(
+    response: str,
+    exercise_templates: Dict[str, Any]
+) -> None:
+    """Renderiza UI para salvar rotina sugerida pela IA no Hevy."""
+    
+    # Inicializa parser com templates
+    parser = WorkoutParser(exercise_templates=exercise_templates)
+    
+    # Tenta parsear a resposta
+    routine = parser.parse(response)
+    
+    if not routine or not routine.exercises:
+        st.info("💡 A IA sugeriu exercícios mas não foi possível extrair uma rotina estruturada.")
+        return
+    
+    # Mostra preview da rotina
+    st.markdown("---")
+    st.subheader("📋 Rotina Detectada")
+    
+    # Preview da rotina
+    preview = format_routine_preview(routine)
+    st.code(preview, language=None)
+    
+    # Opções de edição
+    with st.expander("✏️ Editar antes de salvar", expanded=False):
+        new_title = st.text_input("Título da rotina:", value=routine.title)
+        routine.title = new_title
+        
+        new_notes = st.text_area("Notas (opcional):", value=routine.notes or "")
+        routine.notes = new_notes if new_notes else None
+    
+    # Mostra exercícios não encontrados
+    missing_exercises = [
+        ex.name for ex in routine.exercises 
+        if not ex.exercise_template_id
+    ]
+    if missing_exercises:
+        st.warning(
+            f"⚠️ Exercícios sem correspondência no Hevy:\n" +
+            "\n".join(f"- {name}" for name in missing_exercises)
+        )
+    
+    # Botão para salvar
+    col1, col2 = st.columns([1, 3])
+    with col1:
+        if st.button("💾 Salvar no Hevy", type="primary"):
+            try:
+                client = get_hevy_client()
+                if not client:
+                    st.error("Cliente Hevy não configurado!")
+                    return
+                
+                # Converte para formato da API
+                routine_data = routine.to_api_format()
+                
+                # Cria a rotina usando os parâmetros corretos
+                result = client.create_routine(
+                    title=routine_data["title"],
+                    exercises=routine_data["exercises"],
+                    folder_id=routine_data.get("folder_id"),
+                    notes=routine_data.get("notes")
+                )
+                
+                st.success(f"✅ Rotina '{routine.title}' criada com sucesso!")
+                st.json(result)
+                
+                # Limpa o estado de rotina pendente
+                if "pending_routine" in st.session_state:
+                    del st.session_state.pending_routine
+                    
+            except Exception as e:
+                st.error(f"❌ Erro ao criar rotina: {e}")
+
+
 def render_ai_chat_tab(
     profile: UserProfile,
     processor: WorkoutProcessor,
@@ -789,6 +893,9 @@ def render_ai_chat_tab(
     with st.expander("🔧 Modelos disponíveis", expanded=False):
         for model in available_models:
             st.text(f"✅ {model}")
+    
+    # Carrega templates de exercícios para o parser
+    exercise_templates = fetch_exercise_templates()
     
     # Contexto para o chat
     profile_context = profile.get_context_for_llm()
@@ -851,10 +958,23 @@ Volume médio por treino: {stats['avg_volume_per_workout']:,.0f} kg
     if "chat_messages" not in st.session_state:
         st.session_state.chat_messages = []
     
-    # Exibe histórico
-    for message in st.session_state.chat_messages:
+    # Exibe histórico com botões de salvar para respostas com treinos
+    for idx, message in enumerate(st.session_state.chat_messages):
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+            
+            # Se for resposta da IA e contiver sugestão de treino, mostra opção de salvar
+            if message["role"] == "assistant" and detect_workout_suggestion(message["content"]):
+                if st.button(f"📋 Extrair e salvar rotina", key=f"save_routine_{idx}"):
+                    st.session_state.pending_routine = message["content"]
+                    st.rerun()
+    
+    # Se há uma rotina pendente para salvar, mostra a UI
+    if "pending_routine" in st.session_state:
+        render_save_routine_ui(
+            st.session_state.pending_routine,
+            exercise_templates
+        )
     
     # Input do usuário
     if prompt := st.chat_input("Faça uma pergunta sobre seus treinos..."):
@@ -874,6 +994,13 @@ Use os dados do usuário e seus treinos para dar recomendações personalizadas 
 Responda de forma clara, objetiva e sempre justifique suas recomendações com base científica quando possível.
 Se não tiver certeza de algo, seja honesto sobre isso.
 Você tem acesso ao histórico COMPLETO de treinos do usuário no período selecionado, incluindo datas, nomes dos treinos, volumes e exercícios realizados.
+
+IMPORTANTE: Quando sugerir treinos, use este formato para facilitar a extração:
+- Nome do Exercício: Séries x Repetições (peso opcional)
+Exemplo:
+- Supino Reto: 4x8-12
+- Agachamento: 4x6-8
+- Remada Curvada: 3x10-12
 """
         
         with st.chat_message("assistant"):
@@ -893,6 +1020,11 @@ Você tem acesso ao histórico COMPLETO de treinos do usuário no período selec
                         "role": "assistant",
                         "content": response
                     })
+                    
+                    # Se a resposta contém sugestão de treino, mostra botão
+                    if detect_workout_suggestion(response):
+                        st.info("💡 Detectei uma sugestão de treino! Clique no botão acima para extrair e salvar no Hevy.")
+                        
                 except Exception as e:
                     error_msg = f"Erro ao gerar resposta: {e}"
                     st.error(error_msg)
@@ -901,6 +1033,8 @@ Você tem acesso ao histórico COMPLETO de treinos do usuário no período selec
     if st.session_state.chat_messages:
         if st.button("🗑️ Limpar histórico"):
             st.session_state.chat_messages = []
+            if "pending_routine" in st.session_state:
+                del st.session_state.pending_routine
             st.rerun()
 
 
